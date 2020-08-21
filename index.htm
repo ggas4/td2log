@@ -1,0 +1,105 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div id="pre-form">
+        <h1>Witamy w narzędziu śledzenia pociągów w Train Driver 2!</h1>
+        <label for="num">Podaj numer pociągu</label>
+        <br />
+        <br />
+        <input id="num" type="text" />&nbsp;
+        <select id="num2" name="Wybierz pociąg z listy.">
+
+        </select>
+        <button id="track">Śledź</button>
+    </div>
+    <div id="tracking" hidden="hidden">
+
+    </div>
+    <button id="save" hidden="hidden">Zapisz</button>
+    <button id="stop" hidden="hidden">Stop!</button>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="FileSaver.js"></script>
+    <script>
+        let lastSignal = 'RESET1';
+        let timeOut;
+        let req;
+
+        function getTrains() {
+            var rsp = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
+                var trainsCount;
+                for (trainsCount = 0; rsp.responseJSON.message[trainsCount] != null; trainsCount++) { };
+                var trainArray = [];
+
+                for (var sel = 0; sel < (trainsCount - 1); sel++) {
+                    trainArray.push(rsp.responseJSON.message[sel].trainNo);
+                }
+                return trainArray;
+            });
+        }
+
+        function detect(num) {
+            var rsp = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
+                rsp = rsp.responseJSON.message;
+                var trainsCount;
+                var sel;
+                for (trainsCount = 0; rsp[trainsCount] != null; trainsCount++) { };
+                for (sel = 0; sel <= trainsCount; sel++) {
+                    if (rsp[sel].trainNo == num) {
+                        break;
+                    }
+                }
+                if (rsp[sel].dataSignal != lastSignal) {
+                    var html = $('#tracking').html();
+                    var currentHour = {
+                        hrs: new Date().getHours(),
+                        mins: new Date().getMinutes()
+                    };
+                    if (currentHour.hrs < 10) {
+                        currentHour.hrs = '0' + currentHour.hrs;
+                    }
+                    if (currentHour.mins < 10) {
+                        currentHour.mins = '0' + currentHour.mins;
+                    }
+                    html += '<p class="record">Godzina ' + (currentHour.hrs) + ':' + (currentHour.mins) + ', Sceneria ' + rsp[sel].station.stationName + ', Semafor ' + rsp[sel].dataSignal + '</p>';
+                    $('#tracking').html(html);
+                    lastSignal = rsp[sel].dataSignal;
+                }
+                timeOut = setTimeout(detect(num), 30000);
+                return;
+            });
+        }
+
+        function refreshRJ(number, server) {
+            const RJ = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + number + ';' + server);
+            return RJ;
+        }
+
+        $('#track').click(function () {
+            $('#pre-form').hide();
+            $('#save').show();
+            $('#stop').show();
+
+            req = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + $('#num').val() + ';eu').done(function () {
+                $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + req.responseJSON.message.trainInfo.trainCategoryCode +' '+ $('#num').val() + ', informacje odświeżane co pół minuty...</p>');
+            });
+            $('#tracking').show();
+
+            detect($('#num').val());
+        });
+
+        $('#stop').click(function () {
+            location.reload(true);
+        });
+
+        $('#save').click(function () {
+            saveAs(new Blob([$('#tracking').html().replace('<br>', '\n')]), "log.html");
+        });
+    </script>
+</body>
+
+</html>

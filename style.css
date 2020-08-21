@@ -1,0 +1,51 @@
+#pre-form {
+    padding-left: 30%;
+    padding-right: 30%;
+    text-align: center;
+    border-color: 1px solid black;
+}
+
+.notice1 {
+    color: rgb(37, 140, 33);
+    font-style: italic;
+    font-weight: bolder;
+    text-align: center;
+    font-size: x-large;
+}
+
+body {
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 14pt;
+    background-color: rgb(107, 185, 152);
+    color: rgb(255, 255, 255);
+}
+
+.record {
+    color: rgb(191, 230, 230);
+    text-align: center;
+    border: azure;
+}
+
+button{
+    background-color: burlywood;
+    border: none;
+    font-family: 'Calibri', 'Arial', monospace;
+    color: darkslategrey;
+    text-align: center;
+    text-decoration: none;
+    padding: 10px 10px;
+    font-size: 20pt;
+}
+button:hover{
+    background-color: rgb(231, 200, 159);
+}
+button:focus{
+    background-color: rgb(172, 138, 94);
+}
+button:not(:focus) button:not(:hover){
+    background-color: burlywood;
+}
+
+input [type=text] {
+    padding: 15px;
+}
