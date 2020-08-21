@@ -49,3 +49,14 @@ button:not(:focus) button:not(:hover){
 input [type=text] {
     padding: 15px;
 }
+.middle {
+    text-align: center;
+}
+
+table {
+    border-collapse: collapse;
+}
+table, tr, td {
+    border-style: solid;
+    border-color: rgb(255, 255, 255);
+}

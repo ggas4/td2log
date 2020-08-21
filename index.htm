@@ -8,13 +8,12 @@
 <body>
     <div id="pre-form">
         <h1>Witamy w narzędziu śledzenia pociągów w Train Driver 2!</h1>
-        <label for="num">Podaj numer pociągu</label>
+        <label for="num">Wybierz numer pociągu z listy:</label>
         <br />
         <br />
-        <input id="num" type="text" />&nbsp;
-        <select id="num2" name="Wybierz pociąg z listy.">
-
-        </select>
+        <select id="num" name="trainSelector">
+            <option value="n/a">Wybierz pociąg</option>
+        </select>&nbsp;
         <button id="track">Śledź</button>
     </div>
     <div id="tracking" hidden="hidden">
@@ -25,58 +24,65 @@
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="FileSaver.js"></script>
     <script>
-        let lastSignal = 'RESET1';
-        let timeOut;
-        let req;
+        let loaded = false;
+        let interval = null;
 
-        function getTrains() {
-            var rsp = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
-                var trainsCount;
-                for (trainsCount = 0; rsp.responseJSON.message[trainsCount] != null; trainsCount++) { };
-                var trainArray = [];
+        var lastT = {
+            signal: null,
+            timetable: null
+        };
 
-                for (var sel = 0; sel < (trainsCount - 1); sel++) {
-                    trainArray.push(rsp.responseJSON.message[sel].trainNo);
-                }
-                return trainArray;
-            });
+        function retrieveHours(hr) {
+            if (hr.hrs < 10) {
+                hr.hrs = '0' + hr.hrs;
+            }
+            if (hr.mins < 10) {
+                hr.mins = '0' + hr.mins;
+            }
+            return hr;
         }
 
-        function detect(num) {
-            var rsp = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
-                rsp = rsp.responseJSON.message;
-                var trainsCount;
+        $('#num').click(function () {
+            if (!loaded) {
+                var API = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
+                    var resp = [];
+                    API = API.responseJSON.message;
+                    var trainCounter = (API.length) - 1;
+                    for (var sel = 0; sel <= trainCounter; sel++) {
+                        resp.push(API[sel].trainNo);
+                    }
+                    $('#num').html('');
+                    for (var i = 0; i < resp.length; i++) {
+                        $('#num').append('<option value="' + resp[i] + '">' + resp[i] + '</option>');
+                    }
+                });
+                loaded = true;
+            }
+        });
+
+        function trace() {
+            var num = $('#num').val();
+            var API = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
+                API = API.responseJSON.message;
+                var trainCounter = (API.length) - 1;
                 var sel;
-                for (trainsCount = 0; rsp[trainsCount] != null; trainsCount++) { };
-                for (sel = 0; sel <= trainsCount; sel++) {
-                    if (rsp[sel].trainNo == num) {
-                        break;
+                var currentHour = {
+                    hrs: new Date().getHours(),
+                    mins: new Date().getMinutes()
+                }
+                currentHour = retrieveHours(currentHour);
+                for (sel = 0; sel <= trainCounter; sel++) {
+                    if (API[sel].trainNo == num) {
+                        if (lastT.signal != API[sel].dataSignal) {
+                            var html = $('#tracking').html();
+                            html += '<p class="record">Godzina ' + (currentHour.hrs) + ':' + (currentHour.mins) + ', Sceneria ' + API[sel].station.stationName + ', Semafor ' + API[sel].dataSignal + '</p>';
+                            $('#tracking').html(html);
+                            lastT.signal = API[sel].dataSignal;
+                        }
+                        return;
                     }
                 }
-                if (rsp[sel].dataSignal != lastSignal) {
-                    var html = $('#tracking').html();
-                    var currentHour = {
-                        hrs: new Date().getHours(),
-                        mins: new Date().getMinutes()
-                    };
-                    if (currentHour.hrs < 10) {
-                        currentHour.hrs = '0' + currentHour.hrs;
-                    }
-                    if (currentHour.mins < 10) {
-                        currentHour.mins = '0' + currentHour.mins;
-                    }
-                    html += '<p class="record">Godzina ' + (currentHour.hrs) + ':' + (currentHour.mins) + ', Sceneria ' + rsp[sel].station.stationName + ', Semafor ' + rsp[sel].dataSignal + '</p>';
-                    $('#tracking').html(html);
-                    lastSignal = rsp[sel].dataSignal;
-                }
-                timeOut = setTimeout(detect(num), 30000);
-                return;
             });
-        }
-
-        function refreshRJ(number, server) {
-            const RJ = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + number + ';' + server);
-            return RJ;
         }
 
         $('#track').click(function () {
@@ -85,11 +91,19 @@
             $('#stop').show();
 
             req = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + $('#num').val() + ';eu').done(function () {
-                $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + req.responseJSON.message.trainInfo.trainCategoryCode +' '+ $('#num').val() + ', informacje odświeżane co pół minuty...</p>');
-            });
-            $('#tracking').show();
+                try {
+                    $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + req.responseJSON.message.trainInfo.trainCategoryCode + ' ' + $('#num').val() + ', informacje odświeżane co pół minuty...</p>');
+                }
+                catch{
+                    $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + $('#num').val() + ', informacje odświeżane co pół minuty...</p>');
 
-            detect($('#num').val());
+                }
+                finally {
+                    trace();
+                    $('#tracking').show();
+                    interval = setInterval('trace()', 5000);
+                }
+            });
         });
 
         $('#stop').click(function () {
@@ -99,6 +113,7 @@
         $('#save').click(function () {
             saveAs(new Blob([$('#tracking').html().replace('<br>', '\n')]), "log.html");
         });
+
     </script>
 </body>
 
