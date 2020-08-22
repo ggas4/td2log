@@ -16,9 +16,31 @@
         </select>&nbsp;
         <button id="track">Śledź</button>
     </div>
-    <div id="tracking" hidden="hidden">
+    <div id="log">
+        <div id="tracking" hidden="hidden">
 
+        </div>
+        <div id="timetables" hidden="hidden">
+            <table class="atb">
+                <tr>
+                    <th colspan="2">Tabliczka relacyjna</td>
+                </tr>
+                <tr>
+                    <td>Aktualne na czas</td>
+                    <td class="RJtime"></td>
+                </tr>
+                <tr>
+                    <td>Ze stacji</td>
+                    <td class="RJstart"></td>
+                </tr>
+                <tr>
+                    <td>Do stacji</td>
+                    <td class="RJend"></td>
+                </tr>
+            </table>
+        </div>
     </div>
+    <br />
     <button id="save" hidden="hidden">Zapisz</button>
     <button id="stop" hidden="hidden">Stop!</button>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -26,10 +48,12 @@
     <script>
         let loaded = false;
         let interval = null;
+        let init = false;
 
         var lastT = {
             signal: null,
-            timetable: null
+            starter: null,
+            stopper: null
         };
 
         function retrieveHours(hr) {
@@ -40,6 +64,42 @@
                 hr.mins = '0' + hr.mins;
             }
             return hr;
+        }
+
+        function fetchTimetable() {
+            var API = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + $('#num').val() + ';eu').done(function () {
+                try {
+                    var rjPoints;
+                    API = API.responseJSON.message;
+                    rjPoints = API.trainInfo.route;
+                    rjPoints = rjPoints.split('|');
+                    if (((lastT.starter != rjPoints[0]) || (lastT.stopper != rjPoints[1])) && (init)) {
+                        $('#timetables').append('<br />');
+                        $('.atb').last().clone().appendTo($('#timetables'));
+                    }
+                    lastT.starter = rjPoints[0];
+                    lastT.stopper = rjPoints[1];
+
+                    if (!init) {
+                        init = true;
+                        $('#timetables').show();
+                    }
+
+                    var time = {
+                        hrs: new Date().getHours(),
+                        mins: new Date().getMinutes()
+                    }
+
+                    time = retrieveHours(time);
+
+                    $('.RJtime').last().html(time.hrs + ':' + time.mins);
+                    $('.RJstart').last().html(rjPoints[0]);
+                    $('.RJend').last().html(rjPoints[1]);
+                }
+                finally {
+                    return;
+                }
+            });
         }
 
         $('#num').click(function () {
@@ -70,6 +130,7 @@
                     hrs: new Date().getHours(),
                     mins: new Date().getMinutes()
                 }
+                fetchTimetable();
                 currentHour = retrieveHours(currentHour);
                 for (sel = 0; sel <= trainCounter; sel++) {
                     if (API[sel].trainNo == num) {
@@ -85,23 +146,52 @@
             });
         }
 
+        function getDriver() {
+            var num = $('#num').val();
+            var driver;
+            var API = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
+                API = API.responseJSON.message;
+                var trainCounter = (API.length) - 1;
+                var sel;
+                for (sel = 0; sel <= trainCounter; sel++) {
+                    if (API[sel].trainNo == num) {
+                        driver = API[sel].driverName;
+                        return driver;
+                    }
+                }
+            });
+        }
+
         $('#track').click(function () {
             $('#pre-form').hide();
             $('#save').show();
             $('#stop').show();
+            var num = $('#num').val();
 
-            req = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + $('#num').val() + ';eu').done(function () {
+            var req = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + num + ';eu').done(function () {
                 try {
-                    $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + req.responseJSON.message.trainInfo.trainCategoryCode + ' ' + $('#num').val() + ', informacje odświeżane co pół minuty...</p>');
+                    var driver;
+                    var API = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
+                        API = API.responseJSON.message;
+                        var trainCounter = (API.length) - 1;
+                        var sel;
+                        for (sel = 0; sel <= trainCounter; sel++) {
+                            if (API[sel].trainNo == num) {
+                                driver = API[sel].driverName;
+                                $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + req.responseJSON.message.trainInfo.trainCategoryCode + ' ' + num + '(maszynista: ' + driver + '), informacje odświeżane co pół minuty...</p>');
+                                return;
+                            }
+                        }
+                    });
                 }
                 catch{
-                    $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + $('#num').val() + ', informacje odświeżane co pół minuty...</p>');
+                    $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + num + ', informacje odświeżane co pół minuty...</p>');
 
                 }
                 finally {
                     trace();
                     $('#tracking').show();
-                    interval = setInterval('trace()', 5000);
+                    interval = setInterval('trace()', 20000);
                 }
             });
         });
@@ -111,7 +201,7 @@
         });
 
         $('#save').click(function () {
-            saveAs(new Blob([$('#tracking').html().replace('<br>', '\n')]), "log.html");
+            saveAs(new Blob([$('#log').html()]), "log.html");
         });
 
     </script>
