@@ -37,6 +37,10 @@
                     <td class="RJstart"></td>
                 </tr>
                 <tr>
+                    <td>Przez stacje</td>
+                    <td class="RJthru"></td>
+                </tr>
+                <tr>
                     <td>Do stacji</td>
                     <td class="RJend"></td>
                 </tr>
@@ -76,12 +80,23 @@
                     API = API.responseJSON.message;
                     rjPoints = API.trainInfo.route;
                     rjPoints = rjPoints.split('|');
+
                     if (((lastT.starter != rjPoints[0]) || (lastT.stopper != rjPoints[1])) && (init)) {
                         $('#timetables').append('<br />');
                         $('.atb').last().clone().appendTo($('#timetables'));
                     }
                     lastT.starter = rjPoints[0];
                     lastT.stopper = rjPoints[1];
+                    var html = '';
+                    var i;
+
+                    for (i = 1; i < (API.stopPoints.length) - 1; i++)
+                    {
+                        html += API.stopPoints[i].pointNameRAW + ', ';
+                    }
+
+                    html = html.slice(0, -2);
+                    $('.RJthru').last().html(html);
 
                     if (!init) {
                         init = true;
