@@ -15,6 +15,9 @@
             <option value="n/a">Wybierz pociąg</option>
         </select>&nbsp;
         <button id="track">Śledź</button>
+        <br />
+        <p> Niniejsza strona korzysta z plików cookie w celach statystycznych. Jeśli ich nie akceptujesz, zmień
+            ustawienia przeglądarki lub opuść tę stronę.</pl>
     </div>
     <div id="log">
         <div id="tracking" hidden="hidden">
@@ -66,8 +69,8 @@
             return hr;
         }
 
-        function fetchTimetable() {
-            var API = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + $('#num').val() + ';eu').done(function () {
+        function fetchTimetable(region) {
+            var API = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + $('#num').val() + ';' + region).done(function () {
                 try {
                     var rjPoints;
                     API = API.responseJSON.message;
@@ -130,7 +133,7 @@
                     hrs: new Date().getHours(),
                     mins: new Date().getMinutes()
                 }
-                fetchTimetable();
+
                 currentHour = retrieveHours(currentHour);
                 for (sel = 0; sel <= trainCounter; sel++) {
                     if (API[sel].trainNo == num) {
@@ -140,6 +143,9 @@
                             $('#tracking').html(html);
                             lastT.signal = API[sel].dataSignal;
                         }
+
+                        fetchTimetable(API[sel].region);
+
                         return;
                     }
                 }
@@ -168,7 +174,7 @@
             $('#stop').show();
             var num = $('#num').val();
 
-            var req = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + num + ';eu').done(function () {
+            var req = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + num + ';' + 'eu').done(function () {
                 try {
                     var driver;
                     var API = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
@@ -191,7 +197,7 @@
                 finally {
                     trace();
                     $('#tracking').show();
-                    interval = setInterval('trace()', 20000);
+                    interval = setInterval('trace()', 30000);
                 }
             });
         });
