@@ -167,22 +167,6 @@
             });
         }
 
-        function getDriver() {
-            var num = $('#num').val();
-            var driver;
-            var API = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
-                API = API.responseJSON.message;
-                var trainCounter = (API.length) - 1;
-                var sel;
-                for (sel = 0; sel <= trainCounter; sel++) {
-                    if (API[sel].trainNo == num) {
-                        driver = API[sel].driverName;
-                        return driver;
-                    }
-                }
-            });
-        }
-
         $('#track').click(function () {
             $('#pre-form').hide();
             $('#save').show();
