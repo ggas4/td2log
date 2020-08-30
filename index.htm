@@ -44,6 +44,14 @@
                     <td>Do stacji</td>
                     <td class="RJend"></td>
                 </tr>
+                <tr>
+                    <td>TWR</td>
+                    <td class="twr"></td>
+                </tr>
+                <tr>
+                    <td>Skrajnia</td>
+                    <td class="skr"></td>
+                </tr>
             </table>
         </div>
     </div>
@@ -74,7 +82,8 @@
         }
 
         function fetchTimetable(region) {
-            var API = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + $('#num').val() + ';' + region).done(function () {
+            var sel = document.querySelector('#num');
+            var API = $.getJSON('https://api.td2.info.pl:9640/?method=readFromSWDR&value=getTimetable;' + sel.options[sel.selectedIndex].text + ';' + region).done(function () {
                 try {
                     var rjPoints;
                     API = API.responseJSON.message;
@@ -82,16 +91,15 @@
                     rjPoints = rjPoints.split('|');
 
                     if (((lastT.starter != rjPoints[0]) || (lastT.stopper != rjPoints[1])) && (init)) {
-                        $('#timetables').append('<br />');
-                        $('.atb').last().clone().appendTo($('#timetables'));
+                        document.querySelector('#timetables').append('<br />');
+                        $('.atb').last().clone().appendTo(document.querySelector('#timetables'));
                     }
                     lastT.starter = rjPoints[0];
                     lastT.stopper = rjPoints[1];
                     var html = '';
                     var i;
 
-                    for (i = 1; i < (API.stopPoints.length) - 1; i++)
-                    {
+                    for (i = 1; i < (API.stopPoints.length) - 1; i++) {
                         html += API.stopPoints[i].pointNameRAW + ', ';
                     }
 
@@ -113,6 +121,13 @@
                     $('.RJtime').last().html(time.hrs + ':' + time.mins);
                     $('.RJstart').last().html(rjPoints[0]);
                     $('.RJend').last().html(rjPoints[1]);
+                    var twr, skr;
+                    if (API.trainInfo.twr == 0) twr = 'Nie';
+                    else twr = 'Tak';
+                    if (API.trainInfo.skr == 0) skr = 'Nie';
+                    else skr = 'Tak';
+                    $('.twr').last().html(twr);
+                    $('.skr').last().html(skr);
                 }
                 finally {
                     return;
@@ -182,30 +197,30 @@
                         var sel;
                         for (sel = 0; sel <= trainCounter; sel++) {
                             if (API[sel].trainNo == num) {
-                                driver = API[sel].driverName;
-                                $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + req.responseJSON.message.trainInfo.trainCategoryCode + ' ' + num + '(maszynista: ' + driver + '), informacje odświeżane co pół minuty...</p>');
+                                driver = req.responseJSON.message.trainInfo.driverName;
+                                document.querySelector('#tracking').innerHTML = '<p class="notice1">Rozpoczynam śledzenie pociągu ' + req.responseJSON.message.trainInfo.trainCategoryCode + ' ' + num + '(maszynista: ' + driver + '), informacje odświeżane co pół minuty...</p>';
                                 return;
                             }
                         }
                     });
                 }
                 catch{
-                    $('#tracking').html('<p class="notice1">Rozpoczynam śledzenie pociągu ' + num + ', informacje odświeżane co pół minuty...</p>');
+                    document.querySelector('#tracking').innerHTML = '<p class="notice1">Rozpoczynam śledzenie pociągu ' + num + ', informacje odświeżane co pół minuty...</p>';
 
                 }
                 finally {
                     trace();
-                    $('#tracking').show();
+                    document.querySelector('#tracking').removeAttribute('hidden');
                     interval = setInterval('trace()', 30000);
                 }
             });
         });
 
-        $('#stop').click(function () {
+        document.querySelector('#stop').addEventListener('click', function () {
             location.reload(true);
         });
 
-        $('#save').click(function () {
+        document.querySelector('#save').addEventListener('click', function () {
             saveAs(new Blob([$('#log').html()]), "log.html");
         });
 
