@@ -5,7 +5,7 @@ const path = require('path')
 
 appl.use('/', expr.static(path.join(__dirname, 'public')))
 
-appl.get('/test', function (req, res, next) {
+appl.get('/', function (req, res, next) {
     res.sendFile(path.join(`${__dirname}/index.htm`))
 })
 
