@@ -144,6 +144,7 @@
                     for (var sel = 0; sel <= trainCounter; sel++) {
                         resp.push(API[sel].trainNo);
                     }
+                    resp = resp.sort()
                     $('#num').html('');
                     for (var i = 0; i < resp.length; i++) {
                         $('#num').append('<option value="' + resp[i] + '">' + resp[i] + '</option>');
@@ -153,7 +154,7 @@
             }
         });
 
-        function trace() {
+        const trace = () => {
             var num = $('#num').val();
             var API = $.getJSON('https://api.td2.info.pl:9640/?method=getTrainsOnline').done(function () {
                 API = API.responseJSON.message;
@@ -182,7 +183,7 @@
             });
         }
 
-        $('#track').click(function () {
+        $('#track').click( () => {
             $('#pre-form').hide();
             $('#save').show();
             $('#stop').show();
